@@ -49,6 +49,8 @@ message(STATUS "Setting target properties")
 # Set the library sources
 # -----------------------
 set(libsrc
+    src/Boolperator.cpp
+    src/BoolperatorPair.cpp
     src/LuceneQueryParser.cpp
 )
 

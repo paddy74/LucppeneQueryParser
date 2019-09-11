@@ -74,7 +74,7 @@ public:
      *
      * @return std::string
      */
-    std::string getOperation();
+    std::string getOperation() const;
 
     /**
      * @brief Get the string content of this object.

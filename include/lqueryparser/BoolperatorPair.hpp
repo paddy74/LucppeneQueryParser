@@ -37,10 +37,10 @@ public:
     /**
      * @brief Construct a new BoolperatorPair that is a single Boolperator.
      *
-     * @param right
      * @param operation
+     * @param right
      */
-    BoolperatorPair(Boolperator const & right, std::string const & operation);
+    BoolperatorPair(std::string const & operation, Boolperator const & right);
 
     /* Public class methods */
 
