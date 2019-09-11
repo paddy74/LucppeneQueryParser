@@ -16,8 +16,8 @@ public:
     /* Public static class members */
 
     // The possible boolean operators
-    inline std::array<std::string, 5> const static OPERATIONS = {
-        "NONE", "NOT", "!", "-", "+"};
+    inline std::array<std::string, 4> const static OPERATIONS = {"NOT", "!",
+                                                                 "-", "+"};
 
     /* Constructors */
 
@@ -53,6 +53,8 @@ public:
     Boolperator(std::string const & operation, std::string str);
 
     /* Public class methods */
+
+    std::string toString() const;
 
     /**
      * @brief Is this object's string a Lucene phrase.
@@ -99,19 +101,27 @@ private:
     /* Private class members */
 
     std::string field = "content";  // The field name to operate on.
-    std::string operation;          // The boolean operation.
-    std::string str;                // The string content.
+    std::string operation = "";     // The boolean operation.
+    std::string str = "";           // The string content.
 
-    /* Private class methods */
+    /* Private static class methods */
 
     /**
-     * @brief Parse for the field variable if it exists and remove it from the
-     *  string.
+     * @brief Pop the field from a string and return it, if found.
      *
      * @param str
-     * @return std::string
+     * @return std::string The field.
      */
-    std::string fillField(std::string const & str);
+    std::string static popField(std::string & str);
+
+    /**
+     * @brief Pop the first character from a string and return it if it is a
+     *  boolean operator.
+     *
+     * @param str
+     * @return char The single character operator.
+     */
+    char static popCharOperator(std::string & str);
 };
 
 }  // namespace lqueryparser

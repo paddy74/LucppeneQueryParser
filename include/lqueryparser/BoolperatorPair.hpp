@@ -44,6 +44,8 @@ public:
 
     /* Public class methods */
 
+    std::string toString() const;
+
     /**
      * @brief Ask if this object is a single Boolperator.
      *

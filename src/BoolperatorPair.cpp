@@ -26,6 +26,17 @@ BoolperatorPair::BoolperatorPair(
 
 /* Public class methods */
 
+std::string BoolperatorPair::toString() const
+{
+    std::string outStr = "";
+
+    if (!this->isSingle) outStr = '(' + this->left.toString() + ") ";
+    outStr += this->operation + ' ';
+    outStr += '(' + this->right.toString() + ')';
+
+    return outStr;
+}
+
 bool BoolperatorPair::getIsSingle() const { return this->isSingle; }
 
 std::string BoolperatorPair::getOperation() const { return this->operation; }

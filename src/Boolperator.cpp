@@ -14,18 +14,12 @@ Boolperator::Boolperator()
 Boolperator::Boolperator(std::string str)
 {
     // Fill the field variable
-    str = this->fillField(str);
+    std::string const f = Boolperator::popField(str);
+    if (!f.empty()) this->field = f;
 
-    // Get the boolean operator
-    {
-        char const & c0 = str.at(0);
-        if ((c0 == '!') || (c0 == '-') || (c0 == '+'))
-        {
-            this->operation = c0;
-            str = str.substr(1, str.size() - 1);  // Remove the variable
-        }
-        // else don't initialize
-    }
+    // Fill the operator if first char
+    char const c = Boolperator::popCharOperator(str);
+    if (c != 0) this->operation = c;
 
     // Fill the string
     this->str = str;
@@ -33,11 +27,26 @@ Boolperator::Boolperator(std::string str)
 
 Boolperator::Boolperator(std::string const & operation, std::string str)
 {
-    this->str = this->fillField(str);
+    this->str = this->popField(str);
     this->operation = operation;
 }
 
 /* Public class methods */
+
+std::string Boolperator::toString() const
+{
+    std::string outStr = "";
+
+    if (this->operation != "NONE") outStr = this->operation + ' ';
+    outStr += this->field + ':';
+
+    if (this->getIsPhrase())
+        outStr += "\"" + this->str + "\"";
+    else
+        outStr += this->str;
+
+    return outStr;
+}
 
 bool Boolperator::getIsPhrase() const
 {
@@ -64,10 +73,35 @@ bool Boolperator::strIsSingleOperator(std::string const & str)
 
 /* Private class methods */
 
-std::string Boolperator::fillField(std::string const & str)
+std::string Boolperator::popField(std::string & str)
 {
-    // TODO: implement
-    return str;
+    if (str.size() < 3)  // Must have atleast three characters
+        return "";
+
+    auto const found = str.find(':');
+    if (found != std::string::npos)  // Found
+    {
+        std::string const field = str.substr(0, found - 1);
+        str = str.substr(found + 1);
+        return field;
+    }
+    return "";
+}
+
+char Boolperator::popCharOperator(std::string & str)
+{
+    if (str.size() < 2)  // Must have atleast two characters
+        return 0;
+
+    char const & c0 = str.at(0);  // First character
+    auto const * found = std::find(
+        Boolperator::OPERATIONS.begin(), Boolperator::OPERATIONS.end(), c0);
+    if (found != std::end(Boolperator::OPERATIONS))  // Found
+    {
+        str = str.substr(1);  // Remove first character
+        return c0;
+    }
+    return 0;  // Else
 }
 
 }  // namespace lqueryparser
