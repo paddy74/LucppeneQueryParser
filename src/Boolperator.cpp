@@ -93,13 +93,13 @@ char Boolperator::popCharOperator(std::string & str)
     if (str.size() < 2)  // Must have atleast two characters
         return 0;
 
-    char const & c0 = str.at(0);  // First character
+    std::string const c0(1, str.at(0));  // First character
     auto const * found = std::find(
         Boolperator::OPERATIONS.begin(), Boolperator::OPERATIONS.end(), c0);
     if (found != std::end(Boolperator::OPERATIONS))  // Found
     {
         str = str.substr(1);  // Remove first character
-        return c0;
+        return c0.at(0);
     }
     return 0;  // Else
 }

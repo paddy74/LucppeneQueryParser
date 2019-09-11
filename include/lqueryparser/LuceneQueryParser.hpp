@@ -89,6 +89,9 @@ private:
      * @param phraseTermVect
      */
     void static mergeConsecutiveOps(std::vector<std::string> & phraseTermVect);
+
+    std::vector<std::string> static strSplit(
+        std::string const & str, char const & delim);
 };
 
 }  // namespace lqueryparser

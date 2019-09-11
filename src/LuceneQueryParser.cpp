@@ -1,4 +1,5 @@
 #include <lqueryparser/LuceneQueryParser.hpp>
+#include <regex>
 
 namespace lqueryparser
 {
@@ -9,59 +10,79 @@ std::vector<BoolperatorPair> LuceneQueryParser::parse(
 {
     auto phraseVect = LuceneQueryParser::extractPhrases(queryStr);
     auto outVect = LuceneQueryParser::constructBoolperators(phraseVect);
-    return outVect;
+    return std::vector<BoolperatorPair>();
 }
 
 bool LuceneQueryParser::hasPhrase(std::string const & str)
 {
-    // TODO: Use regexs for double quotes
-
-    if (str.find("\"") == std::string::npos) return false;  // No phrase found
-    return true;                                            // Phrase found
+    std::regex rgx("\".*\"");
+    return std::regex_search(str, rgx);
 }
 
 bool LuceneQueryParser::isPhrase(std::string const & str)
 {
-    if (str.find(' ', 1) == std::string::npos) return false;  // Not phrase
-    return true;                                              // Is a phrase
+    if (str.find(' ') == std::string::npos) return false;  // Not phrase
+    return true;                                           // Is a phrase
 }
 
 /* Private static class methods */
 
+template <typename T>
+std::vector<T> prependVector(std::vector<T> a, std::vector<T> const & b)
+{
+    a.insert(a.end(), b.begin(), b.end());
+    return a;
+}
+
 void LuceneQueryParser::extractPhrases(
     std::string const & queryStr, std::vector<std::string> & outVect)
 {
+    // TODO: Trim queryStr
+
     // Check if the string contains a phrase.
     if (!LuceneQueryParser::hasPhrase(queryStr))
     {
-        outVect.push_back(queryStr);  // Append the string and return.
+        std::vector const notPhraseVect =
+            LuceneQueryParser::strSplit(queryStr, ' ');
+        outVect = prependVector(outVect, notPhraseVect);
+
         return;
     }
 
-    // Find the phrases
-    for (auto itStart = queryStr.begin(); itStart < queryStr.end() - 1;
+    // TODO: There is a better way to do this
+    // Else there is at least one phrase
+    bool endLoop = false;
+    for (auto itStart = queryStr.begin();
+         (itStart < queryStr.end() - 1) && (!endLoop);
          ++itStart)  // Ignore last character
     {
         if (*itStart == '\"')  // Found left quote
         {
             // Loop through for right quote
-            for (auto itEnd = (itStart + 2); itEnd < queryStr.end(); ++itEnd)
+            for (auto itEnd = (itStart + 2);
+                 (itEnd < queryStr.end()) && (!endLoop); ++itEnd)
             {
-                if (*itStart == '\"')  // Found right quote
+                if (*itEnd == '\"')  // Found right quote
                 {
                     // Append not-phrase left
                     if (itStart > queryStr.begin())  // If exists
                     {
+                        // Get not-phrase left
                         std::string const notPhraseLeft = queryStr.substr(
                             0, (itStart - queryStr.begin()) - 1);
-                        outVect.push_back(notPhraseLeft);
+
+                        // Split on ' '
+                        auto notPhraseLeftVect =
+                            LuceneQueryParser::strSplit(notPhraseLeft, ' ');
+
+                        // Prepend
+                        outVect = prependVector(notPhraseLeftVect, outVect);
                     }
 
                     // Phrase
                     {
-                        std::string const phrase = queryStr.substr(
-                            (itStart + 1) - queryStr.begin(),
-                            (itEnd - 1) - queryStr.begin());
+                        std::string const phrase =
+                            std::string(itStart, itEnd + 1);
                         outVect.push_back(phrase);
                     }
 
@@ -79,7 +100,7 @@ void LuceneQueryParser::extractPhrases(
                     // The recursive phrase search on strRight ensures that by
                     //  this line all not-phrases and phrases are extracted, so
                     //  exit the function.
-                    return;
+                    endLoop = true;
                 }
             }
         }
@@ -103,7 +124,7 @@ std::vector<std::string> LuceneQueryParser::extractPhrases(
  * @return true Something was removed.
  * @return false Nothing was removed.
  */
-bool rmFirstLastIfOp(std::vector<std::string> & phraseTermVect)
+bool trimOps(std::vector<std::string> & phraseTermVect)
 {
     bool wasItemRemoved = false;
 
@@ -122,6 +143,127 @@ bool rmFirstLastIfOp(std::vector<std::string> & phraseTermVect)
     }
 
     return wasItemRemoved;
+}
+
+std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
+    std::vector<std::string> phraseTermVect)
+{
+    // Handle 0 values
+    if (phraseTermVect.size() == 0)  // If no values
+        return std::vector<BoolperatorPair>();
+
+    /**
+     * @brief
+     *
+     * @details Use like:
+     * - {
+     * -    auto const ret = handleSize1();
+     * -    if (ret.first) return ret.second;
+     * - }
+     *
+     */
+    auto handleSize1 = [&phraseTermVect]() {
+        if (phraseTermVect.size() == 1)  // If only one item remains
+        {
+            auto const & item = phraseTermVect.at(0);
+
+            if (!Boolperator::strIsSingleOperator(item))  // Is a phrase/term
+            {
+                Boolperator boolp(item);
+                BoolperatorPair newPair("OR", boolp);
+
+                return std::make_pair(
+                    true, std::vector<BoolperatorPair>({newPair}));
+            }
+            else  // Is a single operator -> unacceptable
+                return std::make_pair(true, std::vector<BoolperatorPair>());
+        }
+        return std::make_pair(false, std::vector<BoolperatorPair>());
+    };
+
+    // Handle 1 values
+    {
+        auto const ret = handleSize1();
+        if (ret.first) return ret.second;
+    }
+
+    // Merge consecutive pair operations (inplace)
+    LuceneQueryParser::mergeConsecutiveOps(phraseTermVect);
+
+    // Trim invalid operators
+    {
+        bool wasItemRemoved = true;
+        while (wasItemRemoved) wasItemRemoved = trimOps(phraseTermVect);
+
+        // TODO: Ensure enough values remain
+    }
+
+    // Handle 1 values
+    {
+        auto const ret = handleSize1();
+        if (ret.first) return ret.second;
+    }
+
+    /* At this point the following properties can be assumed:
+
+        There is more than one element
+        There are no consecutive pair operators
+        There are no consecutive single operators
+        The last element is a phrase/term
+        The first element is not a pair operator
+    */
+    // TODO: Merge single operators into the phrase
+
+    std::vector<BoolperatorPair> outVect;  // The output
+
+    for (auto it = phraseTermVect.begin(); it != phraseTermVect.end() - 1;
+         ++it)
+    {
+        auto const idx = it - phraseTermVect.begin();  // The index
+        std::string phrase = phraseTermVect.at(idx);
+
+        if (!BoolperatorPair::strIsPairOperator(phrase))
+        {
+            std::string phraseRight = phraseTermVect.at(idx + 1);
+
+            if (Boolperator::strIsSingleOperator(phrase))
+            {
+                BoolperatorPair boolpPair(phraseRight, phrase);
+                outVect.push_back(boolpPair);
+            }
+            else  // Is a phrase/term, is not a pair or single operator
+            {
+                // Is paired to the right
+                if (BoolperatorPair::strIsPairOperator(phraseRight))
+                {
+                    std::string const & phraseLeft = phrase;
+                    phraseRight = phraseTermVect.at(idx + 2);
+                    std::string const & op = phraseRight;
+
+                    Boolperator boolpLeft(phraseLeft);
+                    Boolperator boolpRight(phraseRight);
+
+                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
+                    outVect.push_back(boolpPair);
+                    it++;  // Skip 1
+                }
+                else  // Is an OR operation
+                {
+                    std::string const & phraseLeft = phrase;
+                    std::string const & op = "OR";
+
+                    Boolperator boolpLeft(phraseLeft);
+                    Boolperator boolpRight(phraseRight);
+
+                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
+                    outVect.push_back(boolpPair);
+                }
+            }
+        }
+        // TODO: Else something went wrong, error
+    }
+
+    return outVect;
 }
 
 void LuceneQueryParser::mergeConsecutiveOps(
@@ -165,133 +307,27 @@ void LuceneQueryParser::mergeConsecutiveOps(
     }
 }
 
-std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
-    std::vector<std::string> phraseTermVect)
+std::vector<std::string> LuceneQueryParser::strSplit(
+    std::string const & str, char const & delim)
 {
-    /**
-     * @brief
-     *
-     * @details Use like:
-     * - {
-     * -    auto const ret = handleSize1();
-     * -    if (ret.first) return ret.second;
-     * - }
-     *
-     */
-    auto handleSize1 = [&phraseTermVect]() {
-        if (phraseTermVect.size() == 1)  // If only one item remains
-        {
-            auto const & item = phraseTermVect.at(0);
+    std::vector<std::string> tokens;
 
-            if (!Boolperator::strIsSingleOperator(item))  // Is a phrase/term
-            {
-                Boolperator boolp(item);
-                BoolperatorPair newPair("OR", boolp);
+    // Skip delimiters at the beginning
+    std::string::size_type lastPos = str.find_first_not_of(delim, 0);
+    // Find first non-delimiter
+    std::string::size_type pos = str.find_first_of(delim, lastPos);
 
-                return std::make_pair(
-                    true, std::vector<BoolperatorPair>({newPair}));
-            }
-            else  // Is a single operator -> unacceptable
-                return std::make_pair(true, std::vector<BoolperatorPair>());
-        }
-        return std::make_pair(false, std::vector<BoolperatorPair>());
-    };
-
-    // Handle 0 values
-    if (phraseTermVect.size() == 0)  // If no values
-        return std::vector<BoolperatorPair>();
-    // Handle 1 values
+    while ((std::string::npos != pos || std::string::npos != lastPos))
     {
-        auto const ret = handleSize1();
-        if (ret.first) return ret.second;
+        // Found token, add to the token vector
+        tokens.push_back(str.substr(lastPos, pos - lastPos));
+        // Skip delimiters
+        lastPos = str.find_first_not_of(delim, pos);
+        // Find next non-delimiter
+        pos = str.find_first_of(delim, lastPos);
     }
 
-    // Merge consecutive pair operations
-    LuceneQueryParser::mergeConsecutiveOps(phraseTermVect);
-
-    // Ensure valid first and last elements and handle 1 values
-    {
-        // Remove first/last elements if invalid operator
-        bool wasItemRemoved = true;
-        while (wasItemRemoved)
-            wasItemRemoved = rmFirstLastIfOp(phraseTermVect);
-
-        // TODO: Ensure enough values remain
-    }
-
-    // Handle 1 values
-    {
-        auto const ret = handleSize1();
-        if (ret.first) return ret.second;
-    }
-
-    /* At this point the following properties can be assumed:
-
-        There is more than one element
-        There are no consecutive pair operators
-        There are no consecutive single operators
-        The last element is a phrase/term
-        The first element is not a pair operator
-    */
-    // TODO: Merge single operators into the phrase
-
-    std::vector<BoolperatorPair> outVect;  // The output
-
-    for (std::vector<std::string>::iterator it = phraseTermVect.begin();
-         it != phraseTermVect.end();)
-    {
-        auto const i = it - phraseTermVect.begin();  // The index
-
-        std::string phrase = phraseTermVect.at(i);
-        std::string phraseRight = phraseTermVect.at(i + 1);
-
-        if (!BoolperatorPair::strIsPairOperator(phrase))
-        {
-            if (Boolperator::strIsSingleOperator(phrase))
-            {
-                BoolperatorPair boolpPair(phraseRight, phrase);
-                outVect.push_back(boolpPair);
-                it++;
-            }
-            else  // Is a phrase/term, is not a pair or single operator
-            {
-                // Is paired to the right
-                if (BoolperatorPair::strIsPairOperator(phraseRight))
-                {
-                    std::string const & phraseLeft = phrase;
-                    phraseRight = phraseTermVect.at(i + 2);
-                    std::string const & op = phraseRight;
-
-                    Boolperator boolpLeft(phraseLeft);
-                    Boolperator boolpRight(phraseRight);
-
-                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outVect.push_back(boolpPair);
-                    it += 2;
-                }
-                else  // Is an OR operation
-                {
-                    std::string const & phraseLeft = phrase;
-                    std::string const & op = "OR";
-
-                    Boolperator boolpLeft(phraseLeft);
-                    Boolperator boolpRight(phraseRight);
-
-                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outVect.push_back(boolpPair);
-                    it++;
-                }
-            }
-        }
-        else
-        {
-            // TODO: Something went wrong. Throw an error
-
-            it++;
-        }
-    }
-
-    return outVect;
+    return tokens;
 }
 
 }  // namespace lqueryparser
