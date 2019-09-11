@@ -54,16 +54,40 @@ public:
 
     /* Public class methods */
 
+    /**
+     * @brief Is this object's string a Lucene phrase.
+     *
+     * @return true The string is a Lucene phrase.
+     * @return false The string is a Lucene term.
+     */
     bool getIsPhrase() const;
 
+    /**
+     * @brief Get the field name to operate on.
+     *
+     * @return std::string
+     */
     std::string getField() const;
+
+    /**
+     * @brief Get the boolean operation of this object.
+     *
+     * @return std::string
+     */
     std::string getOperation();
+
+    /**
+     * @brief Get the string content of this object.
+     *
+     * @return std::string
+     */
     std::string getStr() const;
 
     /* Public static class methods */
 
     /**
-     * @brief Determines if a string is a single operation.
+     * @brief Determines if a string is a boolean operator that acts on a
+     *  single string.
      *
      * @param str
      * @return true
@@ -74,9 +98,9 @@ public:
 private:
     /* Private class members */
 
-    std::string field = "content";
-    std::string operation;
-    std::string str;
+    std::string field = "content";  // The field name to operate on.
+    std::string operation;          // The boolean operation.
+    std::string str;                // The string content.
 
     /* Private class methods */
 

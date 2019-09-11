@@ -44,6 +44,11 @@ public:
     bool static isPhrase(std::string const & str);
 
 private:
+    /**
+     * @brief Default constructor. Private encapsulation indicates this should
+     *  be treated as a static class.
+     *
+     */
     LuceneQueryParser(){};
 
     /* Private static class methods */
@@ -62,12 +67,19 @@ private:
      * @brief Parse phrases contained and not contained by double quotes into a
      *  vector.
      *
-     * @param queryStr
-     * @return std::vector<std::string>
+     * @param queryStr The query string.
+     * @return std::vector<std::string> The phrases and not-phrases of the
+     *  query.
      */
     std::vector<std::string> static extractPhrases(
         std::string const & queryStr);
 
+    /**
+     * @brief Construct the boolean operations vector.
+     *
+     * @param phraseTermVect The phrases and not-phrases of the query.
+     * @return std::vector<BoolperatorPair>
+     */
     std::vector<BoolperatorPair> static constructBoolperators(
         std::vector<std::string> phraseTermVect);
 

@@ -34,22 +34,50 @@ public:
         Boolperator const & left, std::string const & operation,
         Boolperator const & right);
 
+    /**
+     * @brief Construct a new BoolperatorPair that is a single Boolperator.
+     *
+     * @param right
+     * @param operation
+     */
     BoolperatorPair(Boolperator const & right, std::string const & operation);
 
     /* Public class methods */
 
-    bool getIsSingle() const { return this->isSingle; }
+    /**
+     * @brief Ask if this object is a single Boolperator.
+     *
+     * @return true
+     * @return false
+     */
+    bool getIsSingle() const;
 
-    std::string getOperation() const { return this->operation; }
+    /**
+     * @brief Get the boolean operation for this object.
+     *
+     * @return std::string
+     */
+    std::string getOperation() const;
 
-    Boolperator getLeft() const { return this->left; }
+    /**
+     * @brief Get the left Boolperator.
+     *
+     * @return Boolperator
+     */
+    Boolperator getLeft() const;
 
+    /**
+     * @brief Get the right boolperator.
+     *
+     * @return Boolperator
+     */
     Boolperator getRight() const;
 
     /* Public static class methods */
 
     /**
-     * @brief Determines if a string is a pair operation.
+     * @brief Determines if a string is a boolean operator that acts on two
+     *  strings.
      *
      * @param str
      * @return true
@@ -60,12 +88,12 @@ public:
 private:
     /* Private class members */
 
-    bool isSingle = false;
+    bool isSingle = false;  // Indicates this is a single Boolperator.
 
-    std::string operation;
+    std::string operation;  // The object's boolean operation.
 
-    Boolperator left;
-    Boolperator right;
+    Boolperator left;   // The left Boolperator.
+    Boolperator right;  // The right Boolperator.
 };
 
 }  // namespace lqueryparser
