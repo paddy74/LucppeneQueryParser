@@ -57,11 +57,15 @@ private:
      * @brief Parse phrases contained and not contained by double quotes into a
      *  vector by reference.
      *
-     * @param str
-     * @param outVect
+     * @details Split a string into a vector based on \".*\" and space
+     *  delimiters.
+     *
+     * @param str The string to split into phrases and not-phrases.
+     * @param outPhraseTermVect The vector in which to place the output.
      */
     void static extractPhrases(
-        std::string const & queryStr, std::vector<std::string> & outVect);
+        std::string const & queryStr,
+        std::vector<std::string> & outPhraseTermVect);
 
     /**
      * @brief Parse phrases contained and not contained by double quotes into a
@@ -81,7 +85,7 @@ private:
      * @return std::vector<BoolperatorPair>
      */
     std::vector<BoolperatorPair> static constructBoolperators(
-        std::vector<std::string> phraseTermVect);
+        std::vector<std::string> & phraseTermVect);
 
     /**
      * @brief Merge consecutive operations.

@@ -9,8 +9,9 @@ std::vector<BoolperatorPair> LuceneQueryParser::parse(
     std::string const & queryStr)
 {
     auto phraseVect = LuceneQueryParser::extractPhrases(queryStr);
-    auto outVect = LuceneQueryParser::constructBoolperators(phraseVect);
-    return std::vector<BoolperatorPair>();
+    auto const phraseTermVect =
+        LuceneQueryParser::constructBoolperators(phraseVect);
+    return phraseTermVect;
 }
 
 bool LuceneQueryParser::hasPhrase(std::string const & str)
@@ -35,7 +36,7 @@ std::vector<T> prependVector(std::vector<T> a, std::vector<T> const & b)
 }
 
 void LuceneQueryParser::extractPhrases(
-    std::string const & queryStr, std::vector<std::string> & outVect)
+    std::string const & queryStr, std::vector<std::string> & outPhraseTermVect)
 {
     // TODO: Trim queryStr
 
@@ -44,7 +45,7 @@ void LuceneQueryParser::extractPhrases(
     {
         std::vector const notPhraseVect =
             LuceneQueryParser::strSplit(queryStr, ' ');
-        outVect = prependVector(outVect, notPhraseVect);
+        outPhraseTermVect = prependVector(outPhraseTermVect, notPhraseVect);
 
         return;
     }
@@ -76,7 +77,8 @@ void LuceneQueryParser::extractPhrases(
                             LuceneQueryParser::strSplit(notPhraseLeft, ' ');
 
                         // Prepend
-                        outVect = prependVector(notPhraseLeftVect, outVect);
+                        outPhraseTermVect = prependVector(
+                            notPhraseLeftVect, outPhraseTermVect);
                     }
 
                     // Phrase
@@ -86,7 +88,7 @@ void LuceneQueryParser::extractPhrases(
                             std::distance(itStart, itEnd + 1);
                         std::string const phrase = queryStr.substr(
                             itStart - queryStr.begin(), phraseSize);
-                        outVect.push_back(phrase);
+                        outPhraseTermVect.push_back(phrase);
                     }
 
                     // The string right of phrase may have another phrase
@@ -97,7 +99,8 @@ void LuceneQueryParser::extractPhrases(
                             queryStr.end() - queryStr.begin());
 
                         // Recursively append remaining not-phrases & phrases.
-                        LuceneQueryParser::extractPhrases(strRight, outVect);
+                        LuceneQueryParser::extractPhrases(
+                            strRight, outPhraseTermVect);
                     }
 
                     // The recursive phrase search on strRight ensures that by
@@ -113,10 +116,10 @@ void LuceneQueryParser::extractPhrases(
 std::vector<std::string> LuceneQueryParser::extractPhrases(
     std::string const & queryStr)
 {
-    std::vector<std::string> outVect;
-    LuceneQueryParser::extractPhrases(queryStr, outVect);
+    std::vector<std::string> outPhraseTermVect;
+    LuceneQueryParser::extractPhrases(queryStr, outPhraseTermVect);
 
-    return outVect;
+    return outPhraseTermVect;
 }
 
 /**
@@ -149,7 +152,7 @@ bool trimOps(std::vector<std::string> & phraseTermVect)
 }
 
 std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
-    std::vector<std::string> phraseTermVect)
+    std::vector<std::string> & phraseTermVect)
 {
     // Handle 0 values
     if (phraseTermVect.size() == 0)  // If no values
@@ -217,7 +220,7 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
     */
     // TODO: Merge single operators into the phrase
 
-    std::vector<BoolperatorPair> outVect;  // The output
+    std::vector<BoolperatorPair> outBoolpPairVect;  // The output
 
     for (auto it = phraseTermVect.begin(); it != phraseTermVect.end() - 1;
          ++it)
@@ -225,6 +228,7 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
         auto const idx = it - phraseTermVect.begin();  // The index
         std::string phrase = phraseTermVect.at(idx);
 
+        // Is not a pair (for safety)
         if (!BoolperatorPair::strIsPairOperator(phrase))
         {
             std::string phraseRight = phraseTermVect.at(idx + 1);
@@ -232,7 +236,7 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
             if (Boolperator::strIsSingleOperator(phrase))
             {
                 BoolperatorPair boolpPair(phraseRight, phrase);
-                outVect.push_back(boolpPair);
+                outBoolpPairVect.push_back(boolpPair);
             }
             else  // Is a phrase/term, is not a pair or single operator
             {
@@ -247,10 +251,10 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
                     Boolperator boolpRight(phraseRight);
 
                     BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outVect.push_back(boolpPair);
+                    outBoolpPairVect.push_back(boolpPair);
                     it++;  // Skip 1
                 }
-                else  // Is an OR operation
+                else  // Is an OR operation indicated by a space
                 {
                     std::string const & phraseLeft = phrase;
                     std::string const & op = "OR";
@@ -259,14 +263,15 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
                     Boolperator boolpRight(phraseRight);
 
                     BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outVect.push_back(boolpPair);
+                    outBoolpPairVect.push_back(boolpPair);
                 }
             }
         }
-        // TODO: Else something went wrong, error
+        // TODO: Else something went wrong,
+        //  Pair are surrounded by phrases or single operators
     }
 
-    return outVect;
+    return outBoolpPairVect;
 }
 
 void LuceneQueryParser::mergeConsecutiveOps(

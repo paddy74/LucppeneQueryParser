@@ -37,9 +37,11 @@ std::string Boolperator::toString() const
 {
     std::string outStr = "";
 
+    // Opearation
     if (this->operation != "NONE") outStr = this->operation + ' ';
-    outStr += this->field + ':';
+    outStr += this->field + ':';  // Field
 
+    // String content
     if (this->getIsPhrase())
         outStr += "\"" + this->str + "\"";
     else
