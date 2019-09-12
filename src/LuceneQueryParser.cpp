@@ -222,70 +222,96 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
          ++it)
     {
         auto const idx = it - phraseTermVect.begin();  // The index
-        std::string phrase = phraseTermVect.at(idx);
+        std::string const & phraseLeft = phraseTermVect.at(idx);
 
-        // Is not a pair (for safety)
-        if (!BoolperatorPair::strIsPairOperator(phrase))
-        {
+        if (!BoolperatorPair::strIsPairOperator(phraseLeft))
+        {  // phraseLeft is not a pairOp
+            // Element to the right of phraseLeft
             std::string phraseRight = phraseTermVect.at(idx + 1);
 
-            if (Boolperator::strIsSingleOperator(phrase))  // Phrase is op
-            {
-                if (phraseRight.size() > 1)
-                    outBoolpPairVect.push_back(
-                        BoolperatorPair(phrase, phraseRight));
-            }
-            else  // Is a phrase/term, is not a pair or single operator
-            {
-                std::string const & phraseLeft = phrase;
-
-                // Is paired to the right
+            if (!Boolperator::strIsSingleOperator(phraseLeft))
+            {  // phraseLeft is a phrase/term
+                // Handle phraseRight
+                // Phrase right is either a pairOp, singleOp, or phrase/term
                 if (BoolperatorPair::strIsPairOperator(phraseRight))
-                {
-                    std::string const op = phraseRight;
-                    phraseRight = phraseTermVect.at(idx + 2);
+                {  // phraseRight is a pairOp
+                    std::string const pairOp = phraseRight;
+                    phraseRight =
+                        phraseTermVect.at(idx + 2);  // Update phraseRight
 
                     Boolperator rightBoolp;
-                    // Handle phraseRight is singleOp
+                    // Handle updated phraseRight
                     if (Boolperator::strIsSingleOperator(phraseRight))
-                    {
+                    {  // updated phraseRight is a singleOp
                         // Consecutive single operators have been removed so
                         //  prhaseRight + 1 is not a single operator.
-                        std::string const phraseRightOp = phraseRight;
-                        phraseRight = phraseTermVect.at(idx + 3);
+                        std::string const singleOp = phraseRight;
+                        phraseRight =
+                            phraseTermVect.at(idx + 3);  // Update phraseRight
 
-                        rightBoolp = Boolperator(phraseRightOp, phraseRight);
-                        it++;  // Skip
+                        rightBoolp = Boolperator(singleOp, phraseRight);
+                        it++;  // Skip extra
                     }
-                    else
+                    else  // Updated phraseRight is a phrase/term
                         rightBoolp = Boolperator(phraseRight);
                     Boolperator const leftBoolp(phraseLeft);
-                    // TODO: Handle NOT AND?
 
                     outBoolpPairVect.push_back(
-                        BoolperatorPair(leftBoolp, op, rightBoolp));
+                        BoolperatorPair(leftBoolp, pairOp, rightBoolp));
                     it++;  // Skip
                 }
-                else  // Is an OR operation indicated by a space
-                {
-                    Boolperator rightBoolp;
-                    // Handle phraseRight is singleOp
-                    if (Boolperator::strIsSingleOperator(phraseRight))
-                    {
-                        std::string const phraseRightOp = phraseRight;
-                        phraseRight = phraseTermVect.at(idx + 2);
+                else if (Boolperator::strIsSingleOperator(phraseRight))
+                {  // phraseRight is a singleOp
+                    auto const singleOp = phraseRight;
+                    phraseRight =
+                        phraseTermVect.at(idx + 2);  // Update phraseRight
 
-                        rightBoolp = Boolperator(phraseRightOp, phraseRight);
-                        it++;  // Skip
+                    Boolperator leftBoolp;
+                    Boolperator rightBoolp;
+
+                    if (BoolperatorPair::strIsPairOperator(phraseRight))
+                    {  // Updated phraseRight is a pairOp
+                        auto const pairOp = phraseRight;
+                        phraseRight =
+                            phraseTermVect.at(idx + 3);  // Update phraseRight
+
+                        if (singleOp == "+")
+                        {
+                            leftBoolp = Boolperator(phraseLeft);
+                            rightBoolp = Boolperator(phraseRight);
+                        }
+                        else  // pairOp is of AND/OR type
+                        {     // NOT AND, NOT OR (NAND, NOR)
+                            leftBoolp = Boolperator("NOT", phraseLeft);
+                            rightBoolp = Boolperator("NOT", phraseRight);
+                        }
+
+                        outBoolpPairVect.push_back(
+                            BoolperatorPair(leftBoolp, pairOp, rightBoolp));
+                        it++;  // Skip extra
                     }
                     else
-                        rightBoolp = Boolperator(phraseRight);
-                    Boolperator const leftBoolp(phraseLeft);
-                    std::string const op = "OR";
+                    {  // Updated phraseRight is a phrase/term
+                        leftBoolp = Boolperator(phraseLeft);
+                        rightBoolp = Boolperator(singleOp, phraseRight);
+                        outBoolpPairVect.push_back(
+                            BoolperatorPair(leftBoolp, "OR", rightBoolp));
+                    }
 
-                    outBoolpPairVect.push_back(
-                        BoolperatorPair(leftBoolp, op, rightBoolp));
+                    it++;  // Skip
                 }
+                else
+                {  // phraseRight is a phrase/term
+                    outBoolpPairVect.push_back(
+                        BoolperatorPair(phraseLeft, "OR", phraseRight));
+                }
+            }
+            else
+            {  // phrase is a singleOp, phraseRight is a phrase/term
+                auto const & singleOp = phraseLeft;
+                if (phraseRight.size() > 1)
+                    outBoolpPairVect.push_back(
+                        BoolperatorPair(singleOp, phraseRight));
             }
         }
         // TODO: Else something went wrong,
@@ -345,6 +371,10 @@ void LuceneQueryParser::mergeConsecutiveOps(
                 it = phraseTermVect.erase(it);
                 *it = "NOT";
             }
+        }
+        else if ((val == "+") && valNextIsPOp)
+        {
+            it = phraseTermVect.erase(it);
         }
         else  // Not sequential operators
             ++it;
