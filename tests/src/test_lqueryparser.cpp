@@ -1,4 +1,3 @@
-#include <iostream>
 #include <lqueryparser/LuceneQueryParser.hpp>
 
 int main()
@@ -18,7 +17,6 @@ int main()
     if (!bval) throw std::runtime_error("isPhrase() 2 failed");
 
     auto const ret = lqueryparser::LuceneQueryParser::parse(str);
-    for (auto const v : ret) std::cerr << v.toString() << std::endl;
 
     return 0;
 }

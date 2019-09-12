@@ -1,4 +1,3 @@
-#include <iostream>
 #include <lqueryparser/LuceneQueryParser.hpp>
 #include <regex>
 

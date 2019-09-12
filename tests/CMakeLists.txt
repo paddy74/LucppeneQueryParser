@@ -1,15 +1,23 @@
 message(STATUS "Generating tests")
 
 # Create and link the test executables
-add_executable(lqueryparser.test_main src/test_main.cpp)
-target_link_libraries(lqueryparser.test_main lqueryparser)
+add_executable(lqueryparser.test_boolperator src/test_boolperator.cpp)
+target_link_libraries(lqueryparser.test_boolperator lqueryparser)
+
+add_executable(lqueryparser.test_boolperatorPair src/test_boolperatorPair.cpp)
+target_link_libraries(lqueryparser.test_boolperatorPair lqueryparser)
+
+add_executable(lqueryparser.test_lqueryparser src/test_lqueryparser.cpp)
+target_link_libraries(lqueryparser.test_lqueryparser lqueryparser)
 
 # Test definitions
 macro(create_test target)
     add_test(NAME ${target} COMMAND $<TARGET_FILE:${target}>)
 endmacro(create_test)
 
-create_test(lqueryparser.test_main)
+create_test(lqueryparser.test_boolperator)
+create_test(lqueryparser.test_boolperatorPair)
+create_test(lqueryparser.test_lqueryparser)
 
 message(STATUS "Generating tests - done")
 
@@ -32,6 +40,8 @@ if (ENABLE_COVERAGE)
         NAME mytemplate.coverage
         EXECUTABLE cd tests/ && ctest -j ${N_CORES}
         DEPENDENCIES
-            lqueryparser.test_main
+            lqueryparser.test_boolperator
+            lqueryparser.test_boolperatorPair
+            lqueryparser.test_lqueryparser
     )
 endif()
