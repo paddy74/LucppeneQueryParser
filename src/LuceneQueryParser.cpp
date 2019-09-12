@@ -81,8 +81,11 @@ void LuceneQueryParser::extractPhrases(
 
                     // Phrase
                     {
-                        std::string const phrase =
-                            std::string(itStart, itEnd + 1);
+                        // Iterator based substring
+                        auto const phraseSize =
+                            std::distance(itStart, itEnd + 1);
+                        std::string const phrase = queryStr.substr(
+                            itStart - queryStr.begin(), phraseSize);
                         outVect.push_back(phrase);
                     }
 
