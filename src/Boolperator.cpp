@@ -42,18 +42,12 @@ std::string Boolperator::toString() const
     outStr += this->field + ':';  // Field
 
     // String content
-    if (this->getIsPhrase())
+    if (this->isPhrase)
         outStr += "\"" + this->str + "\"";
     else
         outStr += this->str;
 
     return outStr;
-}
-
-bool Boolperator::getIsPhrase() const
-{
-    if (this->str.find(' ') != std::string::npos) return true;
-    return false;
 }
 
 std::string Boolperator::getField() const { return this->field; }
@@ -75,6 +69,24 @@ bool Boolperator::strIsSingleOperator(std::string const & str)
 
 /* Private class methods */
 
+void Boolperator::setIsPhrase()
+{
+    if ((this->str.front() == '"') && (this->str.back() == '"'))  // Is phrase
+    {
+        this->isPhrase = true;
+        this->str.erase(str.begin());
+        this->str.erase(str.end() - 1);
+    }
+    else if (str.find(' ', 1) != std::string::npos)  // Is multiword phrase
+    {
+        this->isPhrase = true;
+    }
+    else  // Not a phrase
+        this->isPhrase = false;
+}
+
+/* Private static class methods */
+
 std::string Boolperator::popField(std::string & str)
 {
     if (str.size() < 3)  // Must have atleast three characters
@@ -83,7 +95,7 @@ std::string Boolperator::popField(std::string & str)
     auto const found = str.find(':');
     if (found != std::string::npos)  // Found
     {
-        std::string const field = str.substr(0, found - 1);
+        std::string const field = str.substr(0, found);
         str = str.substr(found + 1);
         return field;
     }
@@ -95,13 +107,14 @@ char Boolperator::popCharOperator(std::string & str)
     if (str.size() < 2)  // Must have atleast two characters
         return 0;
 
-    std::string const c0(1, str.at(0));  // First character
+    std::string const firstChar(1, str.front());
     auto const * found = std::find(
-        Boolperator::OPERATIONS.begin(), Boolperator::OPERATIONS.end(), c0);
+        Boolperator::OPERATIONS.begin(), Boolperator::OPERATIONS.end(),
+        firstChar);
     if (found != std::end(Boolperator::OPERATIONS))  // Found
     {
         str = str.substr(1);  // Remove first character
-        return c0.at(0);
+        return firstChar.front();
     }
     return 0;  // Else
 }

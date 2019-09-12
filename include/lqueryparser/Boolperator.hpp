@@ -57,14 +57,6 @@ public:
     std::string toString() const;
 
     /**
-     * @brief Is this object's string a Lucene phrase.
-     *
-     * @return true The string is a Lucene phrase.
-     * @return false The string is a Lucene term.
-     */
-    bool getIsPhrase() const;
-
-    /**
      * @brief Get the field name to operate on.
      *
      * @return std::string
@@ -103,6 +95,15 @@ private:
     std::string field = "content";  // The field name to operate on.
     std::string operation = "";     // The boolean operation.
     std::string str = "";           // The string content.
+    bool isPhrase = false;          // The string is a phrase.
+
+    /* Private class methods */
+
+    /**
+     * @brief Check if the string is a phrase (contained by double quotes).
+     *
+     */
+    void setIsPhrase();
 
     /* Private static class methods */
 

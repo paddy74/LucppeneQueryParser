@@ -171,7 +171,7 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
     auto handleSize1 = [&phraseTermVect]() {
         if (phraseTermVect.size() == 1)  // If only one item remains
         {
-            auto const & item = phraseTermVect.at(0);
+            auto const & item = phraseTermVect.front();
 
             if (!Boolperator::strIsSingleOperator(item))  // Is a phrase/term
             {
