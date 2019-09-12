@@ -6,22 +6,28 @@ namespace lqueryparser
 /* Constructors */
 
 BoolperatorPair::BoolperatorPair(
-    Boolperator const & left, std::string const & operation,
-    Boolperator const & right)
+    std::string const & leftStr, std::string const & operation,
+    std::string const & rightStr)
+    : BoolperatorPair(Boolperator(leftStr), operation, Boolperator(rightStr))
 {
-    this->operation = operation;
-
-    this->left = left;
-    this->right = right;
 }
 
 BoolperatorPair::BoolperatorPair(
-    std::string const & operation, Boolperator const & right)
+    Boolperator const & leftBoolp, std::string const & operation,
+    Boolperator const & rightBoolp)
+{
+    this->operation = operation;
+
+    this->left = leftBoolp;
+    this->right = rightBoolp;
+}
+
+BoolperatorPair::BoolperatorPair(
+    std::string const & operation, std::string const & rightStr)
 {
     this->isSingle = true;
-
-    this->operation = operation;
-    this->right = right;
+    this->operation = "OR";
+    this->right = Boolperator(operation, rightStr);
 }
 
 /* Public class methods */
@@ -30,9 +36,14 @@ std::string BoolperatorPair::toString() const
 {
     std::string outStr = "";
 
-    if (!this->isSingle) outStr = '(' + this->left.toString() + ") ";
-    outStr += this->operation + ' ';
-    outStr += '(' + this->right.toString() + ')';
+    // Left
+    if (!this->isSingle) outStr = "( " + this->left.toString() + " )";
+
+    // Operation
+    outStr.append(' ' + this->operation + ' ');
+
+    // Right
+    outStr.append("( " + this->right.toString() + " )");
 
     return outStr;
 }

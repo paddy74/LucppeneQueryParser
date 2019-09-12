@@ -13,22 +13,35 @@ Boolperator::Boolperator()
 
 Boolperator::Boolperator(std::string str)
 {
+    // Fill the operator if first character (before field)
+    char const c = Boolperator::popCharOperator(str);
+    if (c != 0) this->operation = c;  // If found
+
     // Fill the field variable
-    std::string const f = Boolperator::popField(str);
-    if (!f.empty()) this->field = f;
+    {
+        std::string const f = Boolperator::popField(str);
+        if (!f.empty()) this->field = f;
+    }
 
     // Fill the operator if first char
-    char const c = Boolperator::popCharOperator(str);
-    if (c != 0) this->operation = c;
+    {
+        char const c2 = Boolperator::popCharOperator(str);
+        if ((c != 0) && (c2 != 0))  // Both
+            this->operation = Boolperator::mergeSingleOps(c, c2);
+        else if (c2 != 0)  // Only c2
+            this->operation = c2;
+    }
 
     // Fill the string
     this->str = str;
+    // Phrase setting
+    this->setIsPhrase();
 }
 
 Boolperator::Boolperator(std::string const & operation, std::string str)
+    : Boolperator(str)
 {
-    this->str = this->popField(str);
-    this->operation = operation;
+    this->operation = Boolperator::mergeSingleOps(this->operation, operation);
 }
 
 /* Public class methods */
@@ -37,15 +50,22 @@ std::string Boolperator::toString() const
 {
     std::string outStr = "";
 
-    // Opearation
-    if (this->operation != "NONE") outStr = this->operation + ' ';
-    outStr += this->field + ':';  // Field
+    // Field
+    outStr += this->field + ':';
 
     // String content
     if (this->isPhrase)
         outStr += "\"" + this->str + "\"";
     else
         outStr += this->str;
+
+    // Operation
+    if (!this->operation.empty())
+    {
+        outStr.insert(0, "(");
+        outStr.insert(0, this->operation);
+        outStr.append(")");
+    }
 
     return outStr;
 }
@@ -67,6 +87,38 @@ bool Boolperator::strIsSingleOperator(std::string const & str)
     return false;                                                 // Not found
 }
 
+std::string Boolperator::mergeSingleOps(std::string opA, std::string opB)
+{
+    // If eitehr are empty
+    if (opA.empty() && opB.empty())
+        return "";
+    else if (opA.empty() || opB.empty())  // Only one is empty
+    {
+        if (opA.empty()) return opB;
+        return opA;  // opB is empty
+    }
+
+    // TODO: - is different from NOT and !
+    if (opA == "-") opA = "!";
+    if (opB == "-") opB = "!";
+
+    if (opA == opB)  // Same
+    {
+        if (opA == "!")
+            return "";  // Cancel out
+        else            // Both are "+"
+            return opA;
+    }
+    // else different
+    return "NOT";  // NOT wins
+}
+
+std::string Boolperator::mergeSingleOps(char const & opA, char const & opB)
+{
+    return Boolperator::mergeSingleOps(
+        std::string(1, opA), std::string(1, opB));
+}
+
 /* Private class methods */
 
 void Boolperator::setIsPhrase()
@@ -81,8 +133,6 @@ void Boolperator::setIsPhrase()
     {
         this->isPhrase = true;
     }
-    else  // Not a phrase
-        this->isPhrase = false;
 }
 
 /* Private static class methods */

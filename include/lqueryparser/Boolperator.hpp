@@ -89,6 +89,24 @@ public:
      */
     bool static strIsSingleOperator(std::string const & str);
 
+    /**
+     * @brief Merge two single operators.
+     *
+     * @param opA
+     * @param opB
+     * @return std::string
+     */
+    std::string static mergeSingleOps(std::string opA, std::string opB);
+
+    /**
+     * @brief Merge two single operators
+     *
+     * @param opA
+     * @param opB
+     * @return std::string
+     */
+    std::string static mergeSingleOps(char const & opA, char const & opB);
+
 private:
     /* Private class members */
 

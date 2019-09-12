@@ -17,22 +17,34 @@ public:
     /* Public static class members */
 
     // The possible boolean operators
-    inline std::array<std::string, 4> const static OPERATIONS = {"AND", "&&",
-                                                                 "OR", " "};
+    inline std::array<std::string, 3> const static OPERATIONS = {"AND", "&&",
+                                                                 "OR"};
 
     /* Constructors */
 
     /**
      * @brief Construct a new BoolperatorPair object with an operation and a
-     *  left and right boolperator.
+     *  left and right string.
      *
      * @param left
      * @param operation
      * @param right
      */
     BoolperatorPair(
-        Boolperator const & left, std::string const & operation,
-        Boolperator const & right);
+        std::string const & leftStr, std::string const & operation,
+        std::string const & rightStr);
+
+    /**
+     * @brief Construct a new BoolperatorPair object with an operation and a
+     *  left and right boolperator.
+     *
+     * @param leftBoolp
+     * @param operation
+     * @param rightBoolp
+     */
+    BoolperatorPair(
+        Boolperator const & leftBoolp, std::string const & operation,
+        Boolperator const & rightBoolp);
 
     /**
      * @brief Construct a new BoolperatorPair that is a single Boolperator.
@@ -40,7 +52,8 @@ public:
      * @param operation
      * @param right
      */
-    BoolperatorPair(std::string const & operation, Boolperator const & right);
+    BoolperatorPair(
+        std::string const & operation, std::string const & rightStr);
 
     /* Public class methods */
 

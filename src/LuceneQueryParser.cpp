@@ -1,3 +1,4 @@
+#include <iostream>
 #include <lqueryparser/LuceneQueryParser.hpp>
 #include <regex>
 
@@ -174,13 +175,9 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
             auto const & item = phraseTermVect.front();
 
             if (!Boolperator::strIsSingleOperator(item))  // Is a phrase/term
-            {
-                Boolperator boolp(item);
-                BoolperatorPair newPair("OR", boolp);
-
                 return std::make_pair(
-                    true, std::vector<BoolperatorPair>({newPair}));
-            }
+                    true, std::vector<BoolperatorPair>(
+                              {BoolperatorPair("OR", item)}));
             else  // Is a single operator -> unacceptable
                 return std::make_pair(true, std::vector<BoolperatorPair>());
         }
@@ -218,8 +215,6 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
         The last element is a phrase/term
         The first element is not a pair operator
     */
-    // TODO: Merge single operators into the phrase
-
     std::vector<BoolperatorPair> outBoolpPairVect;  // The output
 
     for (auto it = phraseTermVect.begin(); it != phraseTermVect.end() - 1;
@@ -233,10 +228,11 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
         {
             std::string phraseRight = phraseTermVect.at(idx + 1);
 
-            if (Boolperator::strIsSingleOperator(phrase))
+            if (Boolperator::strIsSingleOperator(phrase))  // Phrase is op
             {
-                BoolperatorPair boolpPair(phraseRight, phrase);
-                outBoolpPairVect.push_back(boolpPair);
+                if (phrase.size() > 1)
+                    outBoolpPairVect.push_back(
+                        BoolperatorPair(phrase, phraseRight));
             }
             else  // Is a phrase/term, is not a pair or single operator
             {
@@ -247,8 +243,21 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
                     phraseRight = phraseTermVect.at(idx + 2);
                     std::string const & op = phraseRight;
 
-                    Boolperator boolpLeft(phraseLeft);
-                    Boolperator boolpRight(phraseRight);
+                    Boolperator leftBoolp;
+                    Boolperator rightBoolp;
+
+                    // Handle phraseRight is singleOp
+                    if (Boolperator::strIsSingleOperator(phraseRight))
+                    {
+                        // Consecutive single operators have been removed so
+                        //  prhaseRight + 1 is not a single operator.
+                        std::string const & phraseRightOp = phraseRight;
+                        phraseRight = phraseTermVect.at(idx + 3);
+
+                        rightBoolp = Boolperator(phraseRightOp, phraseRight);
+                        it++;  // Skip
+                    }
+                    // TODO: Handle NOT AND?
 
                     BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
                     outBoolpPairVect.push_back(boolpPair);
@@ -258,9 +267,6 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
                 {
                     std::string const & phraseLeft = phrase;
                     std::string const & op = "OR";
-
-                    Boolperator boolpLeft(phraseLeft);
-                    Boolperator boolpRight(phraseRight);
 
                     BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
                     outBoolpPairVect.push_back(boolpPair);
@@ -280,8 +286,8 @@ void LuceneQueryParser::mergeConsecutiveOps(
     for (std::vector<std::string>::iterator it = phraseTermVect.begin();
          it < (phraseTermVect.end() - 1);)
     {
-        auto const & val = *it;
-        auto const & valNext = *(it + 1);
+        auto & val = *it;
+        auto & valNext = *(it + 1);
 
         bool const valIsPOp = BoolperatorPair::strIsPairOperator(val);
         bool const valNextIsPOp = BoolperatorPair::strIsPairOperator(valNext);
@@ -301,16 +307,28 @@ void LuceneQueryParser::mergeConsecutiveOps(
             Boolperator::strIsSingleOperator(val) &&
             Boolperator::strIsSingleOperator(valNext))
         {
-            if ((val == valNext) &&
-                ((val == "NOT") || (val == "!") || (val == "-")))
+            // TODO: - is different from NOT and !
+            if ((val == "!") || (val == "-")) val = "NOT";
+            if ((valNext == "!") || (valNext == "-")) valNext = "NOT";
+
+            if (val == valNext)  // Same operators
+            {
+                if (val == "NOT")  // NOT
+                {
+                    // Cancel out
+                    it = phraseTermVect.erase(it);
+                    it = phraseTermVect.erase(it);
+                }
+                else                                // Both are '+'
+                    it = phraseTermVect.erase(it);  // Erase one
+            }
+            else  // Different ('+' and "NOT")
             {
                 it = phraseTermVect.erase(it);
-                it = phraseTermVect.erase(it);
+                *it = "NOT";
             }
-            else
-                it = phraseTermVect.erase(it);  // TODO: Properly
         }
-        else
+        else  // Not sequential operators
             ++it;
     }
 }
