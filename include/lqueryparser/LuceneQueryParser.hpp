@@ -79,6 +79,13 @@ private:
         std::string const & queryStr);
 
     /**
+     * @brief Remove operators from a phrase term vector.
+     *
+     */
+    std::vector<std::string> static removeOperators(
+        std::vector<std::string> const & phraseTermVect);
+
+    /**
      * @brief Construct the boolean operations vector.
      *
      * @param phraseTermVect The phrases and not-phrases of the query.

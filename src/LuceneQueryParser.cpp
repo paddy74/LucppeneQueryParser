@@ -215,6 +215,7 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
         The last element is a phrase/term
         The first element is not a pair operator
     */
+
     std::vector<BoolperatorPair> outBoolpPairVect;  // The output
 
     for (auto it = phraseTermVect.begin(); it != phraseTermVect.end() - 1;
@@ -230,46 +231,60 @@ std::vector<BoolperatorPair> LuceneQueryParser::constructBoolperators(
 
             if (Boolperator::strIsSingleOperator(phrase))  // Phrase is op
             {
-                if (phrase.size() > 1)
+                if (phraseRight.size() > 1)
                     outBoolpPairVect.push_back(
                         BoolperatorPair(phrase, phraseRight));
             }
             else  // Is a phrase/term, is not a pair or single operator
             {
+                std::string const & phraseLeft = phrase;
+
                 // Is paired to the right
                 if (BoolperatorPair::strIsPairOperator(phraseRight))
                 {
-                    std::string const & phraseLeft = phrase;
+                    std::string const op = phraseRight;
                     phraseRight = phraseTermVect.at(idx + 2);
-                    std::string const & op = phraseRight;
 
-                    Boolperator leftBoolp;
                     Boolperator rightBoolp;
-
                     // Handle phraseRight is singleOp
                     if (Boolperator::strIsSingleOperator(phraseRight))
                     {
                         // Consecutive single operators have been removed so
                         //  prhaseRight + 1 is not a single operator.
-                        std::string const & phraseRightOp = phraseRight;
+                        std::string const phraseRightOp = phraseRight;
                         phraseRight = phraseTermVect.at(idx + 3);
 
                         rightBoolp = Boolperator(phraseRightOp, phraseRight);
                         it++;  // Skip
                     }
+                    else
+                        rightBoolp = Boolperator(phraseRight);
+                    Boolperator const leftBoolp(phraseLeft);
                     // TODO: Handle NOT AND?
 
-                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outBoolpPairVect.push_back(boolpPair);
-                    it++;  // Skip 1
+                    outBoolpPairVect.push_back(
+                        BoolperatorPair(leftBoolp, op, rightBoolp));
+                    it++;  // Skip
                 }
                 else  // Is an OR operation indicated by a space
                 {
-                    std::string const & phraseLeft = phrase;
-                    std::string const & op = "OR";
+                    Boolperator rightBoolp;
+                    // Handle phraseRight is singleOp
+                    if (Boolperator::strIsSingleOperator(phraseRight))
+                    {
+                        std::string const phraseRightOp = phraseRight;
+                        phraseRight = phraseTermVect.at(idx + 2);
 
-                    BoolperatorPair boolpPair(phraseLeft, op, phraseRight);
-                    outBoolpPairVect.push_back(boolpPair);
+                        rightBoolp = Boolperator(phraseRightOp, phraseRight);
+                        it++;  // Skip
+                    }
+                    else
+                        rightBoolp = Boolperator(phraseRight);
+                    Boolperator const leftBoolp(phraseLeft);
+                    std::string const op = "OR";
+
+                    outBoolpPairVect.push_back(
+                        BoolperatorPair(leftBoolp, op, rightBoolp));
                 }
             }
         }
@@ -294,8 +309,11 @@ void LuceneQueryParser::mergeConsecutiveOps(
 
         if (valIsPOp && valNextIsPOp)  // Merge sequential pair operators.
         {
+            if (val == "&&") val = "AND";
+            if (valNext == "&&") valNext = "AND";
+
             // If the operations are identical
-            if (val == valNext)  // TODO: Handle different but same (AND vs &&)
+            if (val == valNext)
                 it = phraseTermVect.erase(it);  // it = (it + 1)
             else                                // Operations are not identical
             {

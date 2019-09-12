@@ -5,11 +5,7 @@ namespace lqueryparser
 {
 /* Constructors */
 
-Boolperator::Boolperator()
-{
-    this->operation = "NONE";
-    this->str = "";
-}
+Boolperator::Boolperator() {}
 
 Boolperator::Boolperator(std::string str)
 {
