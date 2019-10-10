@@ -72,6 +72,8 @@ std::string Boolperator::getOperation() const { return this->operation; }
 
 std::string Boolperator::getStr() const { return this->str; }
 
+bool Boolperator::getIsPhrase() const { return this->isPhrase; }
+
 /* Public static class methods */
 
 bool Boolperator::strIsSingleOperator(std::string const & str)

@@ -77,6 +77,14 @@ public:
      */
     std::string getStr() const;
 
+    /**
+     * @brief Get if the content is a phrase.
+     *
+     * @return true
+     * @return false
+     */
+    bool getIsPhrase() const;
+
     /* Public static class methods */
 
     /**
