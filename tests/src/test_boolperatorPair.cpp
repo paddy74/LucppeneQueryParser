@@ -1,3 +1,4 @@
+#include <lqueryparser/Boolperator.hpp>
 #include <lqueryparser/BoolperatorPair.hpp>
 
 int main()
@@ -7,10 +8,10 @@ int main()
     std::string const op = "AND";
 
     // Test constructors
-    {
-        lqueryparser::BoolperatorPair boolpPair(op, right);
-    }
-    lqueryparser::BoolperatorPair boolpPair(left, op, right);
+    lqueryparser::BoolperatorPair boolpPair(op, right);
+    boolpPair = lqueryparser::BoolperatorPair(
+        lqueryparser::Boolperator(left), op, lqueryparser::Boolperator(right));
+    boolpPair = lqueryparser::BoolperatorPair(left, op, right);
 
     // Test methods
     boolpPair.toString();

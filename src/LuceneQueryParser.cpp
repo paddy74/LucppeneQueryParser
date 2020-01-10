@@ -350,7 +350,7 @@ void LuceneQueryParser::mergeConsecutiveOps(
             Boolperator::strIsSingleOperator(val) &&
             Boolperator::strIsSingleOperator(valNext))
         {
-            // TODO: - is different from NOT and !
+            // TODO: Handle '-', "prohibits docs that contain the term"
             if ((val == "!") || (val == "-")) val = "NOT";
             if ((valNext == "!") || (valNext == "-")) valNext = "NOT";
 

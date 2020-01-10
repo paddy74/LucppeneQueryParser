@@ -52,10 +52,7 @@ bool BoolperatorPair::getIsSingle() const { return this->isSingle; }
 
 std::string BoolperatorPair::getOperation() const { return this->operation; }
 
-Boolperator BoolperatorPair::getLeft() const
-{
-    return this->left;  // TODO: If single, left is null, so throw error
-}
+Boolperator BoolperatorPair::getLeft() const { return this->left; }
 
 Boolperator BoolperatorPair::getRight() const { return this->right; }
 

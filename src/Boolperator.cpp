@@ -96,7 +96,7 @@ std::string Boolperator::mergeSingleOps(std::string opA, std::string opB)
         return opA;  // opB is empty
     }
 
-    // TODO: - is different from NOT and !
+    // TODO: Handle '-', "prohibits docs that contain the term"
     if (opA == "-") opA = "!";
     if (opB == "-") opB = "!";
 
